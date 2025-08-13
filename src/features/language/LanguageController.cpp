@@ -1,7 +1,7 @@
 #include "LanguageController.h"
+#include "LanguageEnum.h"
 #include <QCoreApplication>
 #include <QGuiApplication>
-#include <QEvent>
 #include <QSettings>
 #include <QLocale>
 #include <QDebug>
@@ -15,7 +15,7 @@ LanguageController::LanguageController(QObject *parent)
     s_instance = this;
 
     // Initialize available languages
-    m_availableLanguages << "en" << "es" << "fr";
+    m_availableLanguages = Language::getAllCodes();
 
     // Restore saved language or detect system language
     m_currentLanguage = initializeLanguage();
@@ -47,8 +47,8 @@ void LanguageController::setCurrentLanguage(const QString &language)
         return;
     }
 
-    if (!m_availableLanguages.contains(language)) {
-        QString availableList = m_availableLanguages.join(", ");
+    if (!Language::isSupported(language)) {
+        QString availableList = Language::getAllCodes().join(", ");
         emit languageLoadFailed(language, QString("Unsupported language. Available languages: %1").arg(availableList));
         return;
     }
@@ -84,7 +84,7 @@ QString LanguageController::initializeLanguage()
     QSettings settings;
     QString savedLanguage = settings.value("language").toString();
 
-    if (!savedLanguage.isEmpty() && m_availableLanguages.contains(savedLanguage)) {
+    if (!savedLanguage.isEmpty() && Language::isSupported(savedLanguage)) {
         qDebug() << "Restored saved language:" << savedLanguage;
         return savedLanguage;
     }
@@ -92,7 +92,7 @@ QString LanguageController::initializeLanguage()
     // Fallback to system locale detection
     QString systemLocale = QLocale::system().name().left(2); // "es", "fr", etc.
 
-    if (m_availableLanguages.contains(systemLocale)) {
+    if (Language::isSupported(systemLocale)) {
         qDebug() << "Using system language:" << systemLocale;
         return systemLocale;
     }
