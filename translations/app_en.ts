@@ -48,13 +48,13 @@
         <location filename="../src/Main.qml" line="17"/>
         <location filename="../src/Main.qml" line="27"/>
         <source>Español</source>
-        <translation type="unfinished"></translation>
+        <translation>Spanish</translation>
     </message>
     <message>
         <location filename="../src/Main.qml" line="18"/>
         <location filename="../src/Main.qml" line="28"/>
         <source>Français</source>
-        <translation type="unfinished"></translation>
+        <translation>French</translation>
     </message>
 </context>
 </TS>

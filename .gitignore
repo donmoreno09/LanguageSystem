@@ -3,3 +3,5 @@ build/
 .claude/settings.local.json
 CMakeLists.txt.user
 nul
+QLocale-Triggering-Analysis.md
+Qt-Translation-Mechanism-Deep-Dive.md
