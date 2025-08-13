@@ -1,0 +1,5 @@
+build/
+*.qm
+.claude/settings.local.json
+CMakeLists.txt.user
+nul
