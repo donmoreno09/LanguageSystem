@@ -140,12 +140,16 @@ qt_add_executable(appLanguageSystem
     src/main.cpp
     src/features/language/LanguageController.cpp
     src/features/language/LanguageController.h
+    src/features/language/LanguageEnum.cpp
+    src/features/language/LanguageEnum.h
 )
 ```
 
-**Lines 11-15**: Creates the main executable target
+**Lines 11-17**: Creates the main executable target
 - `qt_add_executable()`: Qt-specific executable creation with automatic Qt integration
-- Lists all C++ source and header files
+- Lists all C++ source and header files including the new enum system files
+- **LanguageEnum.cpp/h**: Essential for enum system - without these, linker errors occur ("undefined reference to Language::getAllCodes()")
+- **Build Process**: CMake compiles all .cpp files to object files, then links them together
 
 ```cmake
 qt_add_qml_module(appLanguageSystem
@@ -392,6 +396,115 @@ bool isSupported(const QString &languageCode)
 **Lines 31-34**: Language code validation
 - Fast boolean check without string conversion
 - More efficient than converting and comparing enums
+
+### Enum System Workflow Explanation
+
+The enum system replaces hardcoded strings with type-safe language management. Here's the complete workflow:
+
+#### Problem Solved
+**Before (Hardcoded Strings):**
+```cpp
+// LanguageController.cpp:18 (original)
+m_availableLanguages << "en" << "es" << "fr";  // Magic strings, prone to typos
+```
+
+**Issues:**
+- No compile-time validation
+- Easy to make typos ("eng" vs "en")
+- Hard to maintain when adding languages
+- No central definition
+
+#### Solution Architecture
+**Type-Safe Enum Workflow:**
+
+1. **Enum Definition** (`LanguageEnum.h`):
+   ```cpp
+   enum class Code { English, Spanish, French };  // Compile-time constants
+   ```
+
+2. **Conversion Functions** (`LanguageEnum.cpp`):
+   ```cpp
+   toString(Code::Spanish) → "es"     // Enum to ISO code
+   fromString("es") → Code::Spanish   // String to enum
+   getAllCodes() → ["en", "es", "fr"] // Complete list
+   isSupported("es") → true           // Fast validation
+   ```
+
+3. **Integration** (`LanguageController.cpp`):
+   ```cpp
+   // Replaces hardcoded strings:
+   m_availableLanguages = Language::getAllCodes();
+   
+   // Replaces manual validation:
+   if (!Language::isSupported(language)) { ... }
+   ```
+
+#### Complete User Interaction Flow
+
+```mermaid
+graph TD
+    A[User clicks 'Español'] --> B[QML sends 'es' string]
+    B --> C[LanguageController::setCurrentLanguage('es')]
+    C --> D[Language::isSupported('es')]
+    D --> E[Language validation passes]
+    E --> F[QSettings saves 'es']
+    F --> G[loadLanguage('es')]
+    G --> H[QTranslator loads :/translations/app_es.qm]
+    H --> I[emit languageChanged()]
+    I --> J[QML retranslateUi()]
+    J --> K[UI updates to Spanish]
+```
+
+#### Build System Integration
+
+**CMakeLists.txt Requirements:**
+```cmake
+qt_add_executable(appLanguageSystem
+    src/features/language/LanguageEnum.cpp    # MUST include implementation
+    src/features/language/LanguageEnum.h      # MUST include declaration
+    # ... other files
+)
+```
+
+**Build Process:**
+1. **Compile Phase**: `LanguageEnum.cpp` → Object file with function implementations
+2. **Link Phase**: Resolves `Language::getAllCodes()` calls from `LanguageController.cpp`
+3. **Error Prevention**: Without enum files in CMakeLists.txt → "undefined reference" errors
+
+#### Adding New Languages
+
+**Centralized Management - Only modify enum files:**
+
+1. **Update LanguageEnum.h**:
+   ```cpp
+   enum class Code { English, Spanish, French, German };  // Add German
+   ```
+
+2. **Update LanguageEnum.cpp** (all functions):
+   ```cpp
+   case Code::German: return "de";                    // toString()
+   if (languageCode == "de") return Code::German;    // fromString()
+   return QStringList() << "en" << "es" << "fr" << "de";  // getAllCodes()
+   return languageCode == "en" || ... || languageCode == "de";  // isSupported()
+   ```
+
+3. **Automatic Inheritance**: LanguageController automatically supports German through `Language::getAllCodes()`
+
+#### Type Safety Benefits
+
+```cpp
+// Compile-time safety:
+Language::Code lang = Language::Code::Spanish;  ✅ Valid
+Language::Code lang = Language::Code::Invalid;  ❌ Compile error
+
+// Runtime validation:
+Language::isSupported("es");     ✅ Fast O(1) check
+Language::isSupported("xyz");    ✅ Returns false, no crash
+
+// Centralized changes:
+// Adding Portuguese requires changes in only 2 files (LanguageEnum.h/.cpp)
+// All other code automatically inherits the new language
+```
 
 ### src/features/language/LanguageController.h
 

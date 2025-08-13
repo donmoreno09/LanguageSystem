@@ -12,6 +12,8 @@ qt_add_executable(appLanguageSystem
     src/main.cpp
     src/features/language/LanguageController.cpp
     src/features/language/LanguageController.h
+    src/features/language/LanguageEnum.cpp
+    src/features/language/LanguageEnum.h
 )
 
 qt_add_qml_module(appLanguageSystem
